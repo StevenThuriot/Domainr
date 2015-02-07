@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 
 namespace Domainr
 {
-    public static class Domainr
+    public static partial class Domainr
     {
         public static Argument AsArgument(this object value, string name)
         {

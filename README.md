@@ -29,3 +29,35 @@ public static void Execute()
 ```
 
 When the domain instance disposes, it will automatically unload.
+
+Arguments can also be build more easily using the builder.
+
+```csharp
+Type type = ...
+string value = ...
+
+Argument[] arguments = Arguments.Build(myType: type, myString: value)
+```
+
+The parameter name will be used as the key to retrieve them.
+
+```csharp
+var values = Domainr.GetValues("myType", "myString");
+```
+
+It's also possible to ommit names. In this case, a preset name will be used as key. This preset is a concatination of `value.` and the key number, starting with 0;
+
+```csharp
+Type type = ...
+string value = ...
+
+Argument[] arguments = Arguments.Build(type, value)
+var values = Domainr.GetValues("value.0", "value.1");
+```
+
+Mixing is also allowed.
+
+```csharp
+Argument[] arguments = Arguments.Build(type, myString: value)
+var values = Domainr.GetValues("value.0", "myString");
+```

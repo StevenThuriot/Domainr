@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Domainr
@@ -13,12 +14,18 @@ namespace Domainr
         public Domain(AppDomain domain, Action<Exception> handler = null)
         {
             _domain = domain;
+            domain.AssemblyResolve += AssemblyResolve;
 
             if (handler != null)
             {
                 var exceptionHandler = new ExceptionHandler(handler);
                 domain.UnhandledException += exceptionHandler.Handle;
             }
+        }
+
+        private static Assembly AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            return AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == args.Name);
         }
 
 

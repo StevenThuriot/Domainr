@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -70,7 +71,14 @@ namespace Domainr
 
             if (_domain != null)
             {
-                AppDomain.Unload(_domain);
+                try
+                {
+                    AppDomain.Unload(_domain);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e);
+                }
             }
         }
     }

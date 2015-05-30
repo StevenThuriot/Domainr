@@ -11,5 +11,9 @@ namespace Domainr
         Task<T> GetValueAsync<T>(string key);
         object[] GetValues(params string[] keys);
         Task<object[]> GetValuesAsync(params string[] keys);
+        void SetData(string key, object value);
+        void SetData(Argument argument);
+        void SetData(params Argument[] arguments);
+        void ClearData();
     }
 }

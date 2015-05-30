@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -23,6 +25,7 @@ namespace Domainr
             }
         }
 
+        ///<remarks>Assembly Resolving sometimes needs a little bit of help.</remarks>
         private static Assembly AssemblyResolve(object sender, ResolveEventArgs args)
         {
             return AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == args.Name);
@@ -37,12 +40,6 @@ namespace Domainr
         public Task RunAsync(CrossAppDomainDelegate run)
         {
             return Task.Run(() => Run(run));
-        }
-
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-            Disposing();
         }
 
         public T GetValue<T>(string key)
@@ -65,6 +62,81 @@ namespace Domainr
             return Task.Run(() => GetValues(keys));
         }
 
+        public void SetData(string key, object value)
+        {
+            _domain.SetData(key, value);
+        }
+
+        public void SetData(Argument argument)
+        {
+            _domain.SetData(argument.Key, argument.Value);
+        }
+
+        public void SetData(params Argument[] arguments)
+        {
+            switch (arguments.Length)
+            {
+                default:
+                    arguments.AsParallel().ForAll(x => _domain.SetData(x.Key, x.Value));
+                    break;
+
+                case 1:
+                    SetData(arguments[0]);
+                    break;
+
+                case 0:
+                    break;
+            }
+        }
+
+        static readonly Lazy<Func<Dictionary<string, object[]>>> _getLocalStore = new Lazy<Func<Dictionary<string, object[]>>>(
+                () =>
+                {
+                    var currentDomain = Expression.Property(null, typeof(AppDomain), "CurrentDomain");
+                    var localStore = Expression.Field(currentDomain, "_LocalStore");
+                    var lambda = Expression.Lambda<Func<Dictionary<string, object[]>>>(localStore);
+                    var getLocalStore = lambda.Compile();
+
+                    return getLocalStore;
+                });
+
+        /// <remarks>
+        /// Because the <see cref="System.AppDomain"/>'s data cache is private, clearing the data is dependent on a reflection call. 
+        /// This method will stop working if Microsoft ever decides to rename the <see cref="System.AppDomain._LocalStore"/> field. (Even though this is highly unlikely)
+        /// </remarks>
+        public void ClearData()
+        {
+            Run(ClearDataInDomain);
+        }
+
+        private static void ClearDataInDomain()
+        {
+            try
+            {
+                var localStore = _getLocalStore.Value();
+
+                if (localStore == null)
+                    return;
+
+                localStore.Clear();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
+        }
+
+
+
+
+
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            Disposing();
+        }
+
         ~Domain()
         {
             Disposing();
@@ -76,16 +148,15 @@ namespace Domainr
 
             _disposed = true;
 
-            if (_domain != null)
+            if (_domain == null) return;
+
+            try
             {
-                try
-                {
-                    AppDomain.Unload(_domain);
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e);
-                }
+                AppDomain.Unload(_domain);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
             }
         }
     }

@@ -50,6 +50,8 @@
     </Compile>
     <Compile Include="ExceptionHandler.cs" />
     <Compile Include="IDomain.cs" />
+    <Compile Include="MarshalCancellationTokenSource.cs" />
+    <Compile Include="ITokenSource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
